@@ -122,6 +122,40 @@ function renderAdminPanel(){
   }catch(e){showStatus("Could not reach the secure access service. Try again.");button.disabled=false;}
  };
 }
+function parseVfaGameReport(raw){
+ const lines=raw.replace(/^\\uFEFF/,"").split(/\\r?\\n/);
+ const lineValue=(prefix)=>{const line=lines.find(v=>v.trim().startsWith(prefix));return line?line.slice(line.indexOf(":")+1).trim():"";};
+ const scoreLine=lines.find(v=>/^Score:\\s*/i.test(v.trim()))||"";
+ const scoreMatch=scoreLine.match(/^Score:\\s*(.+?)\\s+(\\d+)\\s*-\\s*(\\d+)\\s+(.+)$/i);
+ if(!scoreMatch)throw new Error("This looks like a VFA game report, but its Score line could not be read.");
+ const gameKey=lineValue("Game Identifier")||("report-"+scoreMatch[1]+"-"+scoreMatch[4]+"-"+scoreMatch[2]+"-"+scoreMatch[3]);
+ const players=[];
+ let current=null,role=null;
+ for(const line of lines){
+  const heading=line.match(/^\\s*\\d+\\.\\s+(.+?)\\s+\\((?:<@([0-9]+)>|(Not linked))\\)\\s*$/);
+  if(heading){
+   if(current)players.push(current);
+   current={username:heading[1].trim(),player_key:heading[1].trim().toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,""),team_name:"",position:"",roblox_profile_url:"",games_played:1,stats:{},_roles:[]};
+   role=null;
+   continue;
+  }
+  const roleMatch=line.match(/^\\s*\\[([A-Z0-9]+)\\]\\s*$/);
+  if(roleMatch&&current){role=roleMatch[1].toLowerCase();if(!current._roles.includes(role.toUpperCase()))current._roles.push(role.toUpperCase());continue;}
+  const statMatch=line.match(/^\\s+([a-z][a-z0-9_]*):\\s*(-?\\d+(?:\\.\\d+)?)\\s*$/i);
+  if(statMatch&&current&&role){
+   const statName=statMatch[1].toLowerCase();
+   const number=Number(statMatch[2]);
+   current.stats[role+"_"+statName]=number;
+  }
+ }
+ if(current)players.push(current);
+ const cleanPlayers=players.map(p=>({player_key:p.player_key||p.username.toLowerCase(),username:p.username,team_name:"",position:p._roles.join(", "),roblox_profile_url:"",games_played:1,stats:p.stats,updated_at:new Date().toISOString()}));
+ if(!cleanPlayers.length)throw new Error("No player entries were found under Player Stats.");
+ return {
+  players:cleanPlayers,
+  games:[{game_key:gameKey,home_team:scoreMatch[1].trim(),away_team:scoreMatch[4].trim(),home_score:Number(scoreMatch[2]),away_score:Number(scoreMatch[3]),played_at:null,game_data:{report_type:"VFA game report",game_identifier:gameKey,reporter:lineValue("Reporter"),player_count:cleanPlayers.length,linked_players:lineValue("Linked players"),raw_report:raw},updated_at:new Date().toISOString()}]
+ };
+}
 function parseCsv(text){
  const rows=[];let row=[],field="",quoted=false;
  for(let i=0;i<text.length;i++){const ch=text[i],next=text[i+1];if(ch==='"'&&quoted&&next==='"'){field+='"';i++;}else if(ch==='"'){quoted=!quoted;}else if(ch===","&&!quoted){row.push(field);field="";}else if((ch==="\n"||ch==="\r")&&!quoted){if(ch==="\r"&&next==="\n")i++;row.push(field);if(row.some(v=>v.trim()))rows.push(row);row=[];field="";}else field+=ch;}
@@ -156,7 +190,11 @@ async function previewSeason5File(){
    const firstJson=Math.min(...[trimmed.indexOf("{"),trimmed.indexOf("[")].filter(n=>n>=0));
    const jsonText=Number.isFinite(firstJson)?trimmed.slice(firstJson):"";
    const isJson=jsonText.startsWith("{")||jsonText.startsWith("[");
-   if(file.name.toLowerCase().endsWith(".csv")||(!isJson&&file.name.toLowerCase().endsWith(".txt")&&trimmed.includes(","))){
+   if(/^Game Report\\s*[•-]/mi.test(trimmed)&&/^Score:/mi.test(trimmed)&&/^Player Stats:/mi.test(trimmed)){
+    const parsed=parseVfaGameReport(trimmed);
+    combined.players.push(...parsed.players);combined.games.push(...parsed.games);
+    messages.push(file.name+": "+parsed.players.length+" players, 1 game report");
+   }else if(file.name.toLowerCase().endsWith(".csv")||(!isJson&&file.name.toLowerCase().endsWith(".txt")&&trimmed.includes(","))){
     const rows=parseCsv(trimmed).map(toPlayerRow).filter(Boolean);combined.players.push(...rows);
     messages.push(file.name+": "+rows.length+" player rows");
    }else{
