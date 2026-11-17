@@ -151,7 +151,7 @@ async function previewSeason5File(){
  const combined={players:[],games:[]},messages=[];
  try{
   for(const file of files){
-   const raw=await file.text(),trimmed=raw.replace(/^\\uFEFF/,"").trim();
+   const raw=await file.text(),trimmed=raw.replace(/^\uFEFF/,"").trim();
    if(!trimmed){messages.push(file.name+": empty file");continue;}
    const firstJson=Math.min(...[trimmed.indexOf("{"),trimmed.indexOf("[")].filter(n=>n>=0));
    const jsonText=Number.isFinite(firstJson)?trimmed.slice(firstJson):"";
