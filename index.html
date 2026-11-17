@@ -122,6 +122,9 @@ function renderLegacyPlayers(players){
  const prefix={qb:"qb_",wr:"wr_",db:"db_",kck:"kck_"};
  let filtered=players.map(p=>({...p,_stats:Object.entries(p.stats||{}).filter(([k,v])=>(activeLegacyCategory==="all"||k.startsWith(prefix[activeLegacyCategory]))&&v!==null&&v!==undefined)})).filter(p=>activeLegacyCategory==="all"||p._stats.length);
  const metricKeys=Array.from(new Set(filtered.flatMap(p=>p._stats.map(([k])=>k)))).slice(0,7);
+ const primaryKey=metricKeys.find(k=>/(pass.*(yd|yard)|rush.*(yd|yard)|rec.*(yd|yard)|sack|intercept|int|field.*goal|fg.*made|made)/i.test(k))||metricKeys[0];
+ const valueFor=(p,k)=>{const v=Number(p.stats&&p.stats[k]);return Number.isFinite(v)?v:-Infinity;};
+ filtered.sort((a,b)=>valueFor(b,primaryKey)-valueFor(a,primaryKey));
  const labels=metricKeys.map(k=>k.replace(/^(qb|wr|db|kck)_/,"").replace(/_/g," ").toUpperCase());
  const rows=filtered.map((p,i)=>'<tr><td class="lb-rank">'+(i+1)+'</td><td><div class="lb-player"><span class="lb-avatar" data-roblox-name="'+safeText(p.username)+'">'+initials(p.username)+'</span><span><strong>'+safeText(p.username)+'</strong><small>'+safeText(p.position||"PLAYER")+'</small></span></div></td><td>'+safeText(p.team_name||"—")+'</td><td>'+Number(p.games_played||0)+'</td>'+metricKeys.map(k=>'<td>'+(p.stats&&p.stats[k]!==undefined?safeText(p.stats[k]):"—")+'</td>').join("")+'</tr>').join("");
  root.innerHTML=filtered.length?'<table class="leaderboard-table"><thead><tr><th>#</th><th>Player</th><th>Team</th><th>GP</th>'+labels.map(x=>'<th>'+x+'</th>').join("")+'</tr></thead><tbody>'+rows+'</tbody></table>':'<div class="lb-empty">No player records are available in this category yet.</div>';hydrateRobloxAvatars(root);
