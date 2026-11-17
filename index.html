@@ -103,7 +103,7 @@ function renderAdminPanel(){
  const status=()=>document.getElementById("adminStatus");
  const showStatus=(m)=>{const s=status();if(s)s.textContent=m;};
  const drawManager=()=>{
-  root.innerHTML='<div class="auth-panel"><div class="admin-top"><div><div class="eyebrow">ACCESS VERIFIED</div><h3>Season 5 Import Center</h3><p>Choose a JSON, TXT, or CSV file, preview it, then publish the records to the public Legacy archive.</p></div><button class="secondary" id="adminLock">Lock manager</button></div><div class="import-drop"><strong>Import Season 5 statistics</strong><p>JSON or TXT files can contain players and games; CSV files import player statistics.</p><input id="season5File" type="file" accept=".json,.txt,.csv,application/json,text/plain,text/csv"><div class="auth-actions"><button id="season5Preview" class="secondary">Preview file</button><button id="season5Publish" class="import-action" disabled>Publish Season 5 data</button></div></div><div class="import-preview" id="season5PreviewBox">Choose a JSON or CSV file to preview the records before publishing.</div><div class="auth-status" id="adminStatus" aria-live="polite"></div></div>';
+  root.innerHTML='<div class="auth-panel"><div class="admin-top"><div><div class="eyebrow">ACCESS VERIFIED</div><h3>Season 5 Import Center</h3><p>Choose a JSON, TXT, or CSV file, preview it, then publish the records to the public Legacy archive.</p></div><button class="secondary" id="adminLock">Lock manager</button></div><div class="import-drop"><strong>Import Season 5 statistics</strong><p>JSON or TXT files can contain players and games; CSV files import player statistics.</p><input id="season5File" type="file" accept=".json,.txt,.csv,application/json,text/plain,text/csv" multiple><div class="auth-actions"><button id="season5Preview" class="secondary">Preview file</button><button id="season5Publish" class="import-action" disabled>Publish Season 5 data</button></div></div><div class="import-preview" id="season5PreviewBox">Choose one or more JSON, TXT, or CSV files, then preview the combined records.</div><div class="auth-status" id="adminStatus" aria-live="polite"></div></div>';
   document.getElementById("adminLock").onclick=()=>{adminAccessCode=null;pendingSeason5Import=null;renderAdminPanel();};
   document.getElementById("season5Preview").onclick=previewSeason5File;
   document.getElementById("season5Publish").onclick=publishSeason5File;
@@ -145,31 +145,56 @@ function toGameRow(g,index){
  return {game_key:key,home_team:home,away_team:away,home_score:hs,away_score:as,played_at:g.played_at||g.date||null,game_data:g,updated_at:new Date().toISOString()};
 }
 async function previewSeason5File(){
- const box=document.getElementById("season5PreviewBox"),btn=document.getElementById("season5Publish"),file=document.getElementById("season5File")?.files?.[0];
- if(!file){box.textContent="Choose a file first.";return;}
+ const box=document.getElementById("season5PreviewBox"),btn=document.getElementById("season5Publish"),files=Array.from(document.getElementById("season5File")?.files||[]);
+ pendingSeason5Import=null;btn.disabled=true;
+ if(!files.length){box.textContent="Choose at least one file first.";return;}
+ const combined={players:[],games:[]},messages=[];
  try{
-  const raw=await file.text();let players=[],games=[];
-  const trimmed=raw.replace(/^\uFEFF/,"").trim();const looksLikeJson=trimmed.startsWith("{")||trimmed.startsWith("[");
-  if(file.name.toLowerCase().endsWith(".csv")||(!looksLikeJson&&file.name.toLowerCase().endsWith(".txt")))players=parseCsv(trimmed).map(toPlayerRow).filter(Boolean);
-  else{const parsed=JSON.parse(trimmed);players=(Array.isArray(parsed)?parsed:(parsed.players||parsed.playerStats||parsed.player_stats||[])).map(toPlayerRow).filter(Boolean);games=(Array.isArray(parsed)?[]:(parsed.games||parsed.results||parsed.matchups||[])).map(toGameRow).filter(Boolean);}
-  pendingSeason5Import={players,games};
-  box.textContent="File: "+file.name+"\nPlayer records: "+players.length+"\nGame results: "+games.length+"\n\nPreview:\n"+players.slice(0,5).map(p=>p.username+" • "+(p.team_name||"Team not set")+" • "+Object.keys(p.stats).length+" stat fields").join("\n");
-  btn.disabled=players.length+games.length===0;
- }catch(e){pendingSeason5Import=null;btn.disabled=true;box.textContent="Could not read this file: "+e.message;}
+  for(const file of files){
+   const raw=await file.text(),trimmed=raw.replace(/^\\uFEFF/,"").trim();
+   if(!trimmed){messages.push(file.name+": empty file");continue;}
+   const firstJson=Math.min(...[trimmed.indexOf("{"),trimmed.indexOf("[")].filter(n=>n>=0));
+   const jsonText=Number.isFinite(firstJson)?trimmed.slice(firstJson):"";
+   const isJson=jsonText.startsWith("{")||jsonText.startsWith("[");
+   if(file.name.toLowerCase().endsWith(".csv")||(!isJson&&file.name.toLowerCase().endsWith(".txt")&&trimmed.includes(","))){
+    const rows=parseCsv(trimmed).map(toPlayerRow).filter(Boolean);combined.players.push(...rows);
+    messages.push(file.name+": "+rows.length+" player rows");
+   }else{
+    const parsed=JSON.parse(jsonText||trimmed);
+    const players=Array.isArray(parsed)?parsed:(parsed.players||parsed.playerStats||parsed.player_stats||[]);
+    const games=Array.isArray(parsed)?[]:(parsed.games||parsed.results||parsed.matchups||[]);
+    const playerRows=players.map(toPlayerRow).filter(Boolean),gameRows=games.map(toGameRow).filter(Boolean);
+    combined.players.push(...playerRows);combined.games.push(...gameRows);
+    messages.push(file.name+": "+playerRows.length+" players, "+gameRows.length+" games");
+   }
+  }
+  combined.players=Array.from(new Map(combined.players.map(p=>[p.player_key,p])).values());
+  combined.games=Array.from(new Map(combined.games.map(g=>[g.game_key,g])).values());
+  if(!combined.players.length&&!combined.games.length){box.textContent="No valid records were found.\\n"+messages.join("\\n")+"\\n\\nCheck the file format and make sure player rows include a username.";return;}
+  pendingSeason5Import=combined;
+  box.textContent="Files selected: "+files.length+"\\nCombined player records: "+combined.players.length+"\\nCombined game results: "+combined.games.length+"\\n\\n"+messages.join("\\n")+"\\n\\nFirst players:\\n"+combined.players.slice(0,8).map(p=>p.username+" • "+(p.team_name||"Team not set")+" • "+Object.keys(p.stats).length+" stat fields").join("\\n");
+  btn.disabled=false;
+ }catch(e){pendingSeason5Import=null;btn.disabled=true;box.textContent="Could not read one of the selected files: "+e.message+"\\nNo records have been published.";}
 }
 async function publishSeason5File(){
  const status=document.getElementById("adminStatus"),btn=document.getElementById("season5Publish");
- if(!pendingSeason5Import){status.textContent="Preview a valid file first.";return;}
+ if(!pendingSeason5Import){status.textContent="Preview your selected files first. The Publish button enables when valid records are found.";return;}
  if(!adminAccessCode){status.textContent="Unlock the manager again before publishing.";return;}
- btn.disabled=true;status.textContent="Publishing records securely…";
+ const {players,games}=pendingSeason5Import,batches=[];
+ for(let i=0;i<Math.max(players.length,games.length);i+=100)batches.push({players:players.slice(i,i+100),games:games.slice(i,i+100)});
+ btn.disabled=true;let savedPlayers=0,savedGames=0;
  try{
-  const response=await fetch(ASN_SUPABASE_URL+"/functions/v1/asn-season5-admin",{method:"POST",headers:{"Content-Type":"application/json","apikey":ASN_SUPABASE_KEY,"x-asn-admin-code":adminAccessCode},body:JSON.stringify(pendingSeason5Import)});
-  const result=await response.json().catch(()=>({}));
-  if(!response.ok){status.textContent=result.error||"The import could not be completed.";btn.disabled=false;return;}
-  status.textContent="Published "+result.players+" player records and "+result.games+" game results to the Season 5 archive.";
-  document.getElementById("season5PreviewBox").textContent="Import complete. You can open Legacy to view the published archive.";
+  for(let i=0;i<batches.length;i++){
+   status.textContent="Publishing batch "+(i+1)+" of "+batches.length+"…";
+   const response=await fetch(ASN_SUPABASE_URL+"/functions/v1/asn-season5-admin",{method:"POST",headers:{"Content-Type":"application/json","apikey":ASN_SUPABASE_KEY,"x-asn-admin-code":adminAccessCode},body:JSON.stringify(batches[i])});
+   const result=await response.json().catch(()=>({}));
+   if(!response.ok){status.textContent="Batch "+(i+1)+" failed: "+(result.error||("HTTP "+response.status))+". Saved so far: "+savedPlayers+" players, "+savedGames+" games. You can safely retry; records are matched by key.";btn.disabled=false;return;}
+   savedPlayers+=Number(result.players)||0;savedGames+=Number(result.games)||0;
+  }
+  status.textContent="Published successfully: "+savedPlayers+" player records and "+savedGames+" game results.";
+  document.getElementById("season5PreviewBox").textContent="Import complete. "+savedPlayers+" players and "+savedGames+" games published from "+document.getElementById("season5File").files.length+" files.";
   pendingSeason5Import=null;loadLegacyArchive();btn.disabled=true;
- }catch(e){status.textContent="Could not reach the secure import service. Try again.";btn.disabled=false;}
+ }catch(e){status.textContent="Upload interrupted: "+e.message+". Saved so far: "+savedPlayers+" players, "+savedGames+" games. You can safely retry.";btn.disabled=false;}
 }
 
 // Run the initial private-route check only after all admin variables and functions are initialized.
