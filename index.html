@@ -87,7 +87,7 @@ function statsLeaderboardMarkup(){
  const c=cfg[activeStatsCategory]||cfg.passing;
  const rows=all.filter(p=>p[c.field]&&Object.values(p[c.field]).some(v=>Number(v)>0)).sort((a,b)=>(Number(b[c.field][c.sort])||0)-(Number(a[c.field][c.sort])||0));
  const head='<thead><tr><th>#</th><th>Player</th>'+c.labels.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead>';
- const body=rows.map((p,i)=>'<tr><td class="lb-rank">'+(i+1)+'</td><td><div class="lb-player"><span class="lb-avatar">'+initials(p.name)+'</span><span><strong>'+safeText(p.name)+'</strong><small>'+safeText(p.positions.join(" / "))+'</small></span></div></td>'+c.keys.map((k,j)=>'<td class="'+(j===0?'lb-stat-primary':'')+'">'+(p[c.field][k]===undefined?'—':safeText(p[c.field][k]))+'</td>').join('')+'</tr>').join('');
+ const body=rows.map((p,i)=>'<tr><td class="lb-rank">'+(i+1)+'</td><td><div class="lb-player"><span class="lb-avatar" data-roblox-name="'+safeText(p.name)+'">'+initials(p.name)+'</span><span><strong>'+safeText(p.name)+'</strong><small>'+safeText(p.positions.join(" / "))+'</small></span></div></td>'+c.keys.map((k,j)=>'<td class="'+(j===0?'lb-stat-primary':'')+'">'+(p[c.field][k]===undefined?'—':safeText(p[c.field][k]))+'</td>').join('')+'</tr>').join('');
  return '<div class="leaderboard-card"><div class="leaderboard-title"><div><small>ASN • VFA FOOTBALL</small><h3>'+c.label+'</h3></div><span class="muted">GAME REPORT • '+latestGameId+'</span></div><div class="leaderboard-tabs"><button data-stat-tab="passing" class="'+(activeStatsCategory==="passing"?'active':'')+'">Passing</button><button data-stat-tab="receiving" class="'+(activeStatsCategory==="receiving"?'active':'')+'">Receiving</button><button data-stat-tab="defense" class="'+(activeStatsCategory==="defense"?'active':'')+'">Defense</button><button data-stat-tab="kicking" class="'+(activeStatsCategory==="kicking"?'active':'')+'">Kicking</button></div><div class="leaderboard-scroll"><table class="leaderboard-table">'+head+'<tbody>'+(body||'<tr><td colspan="'+(c.keys.length+2)+'" class="lb-empty">No statistics are available in this category.</td></tr>')+'</tbody></table></div></div><p class="muted" style="max-width:1040px;margin:12px auto">Roblox avatars can be displayed once profile IDs or avatar image URLs are present in the imported records. Initials are used when profile imagery is unavailable.</p>';
 }
 function renderLegacyPlayers(players){
@@ -97,8 +97,8 @@ function renderLegacyPlayers(players){
  let filtered=players.map(p=>({...p,_stats:Object.entries(p.stats||{}).filter(([k,v])=>(activeLegacyCategory==="all"||k.startsWith(prefix[activeLegacyCategory]))&&v!==null&&v!==undefined)})).filter(p=>activeLegacyCategory==="all"||p._stats.length);
  const metricKeys=Array.from(new Set(filtered.flatMap(p=>p._stats.map(([k])=>k)))).slice(0,7);
  const labels=metricKeys.map(k=>k.replace(/^(qb|wr|db|kck)_/,"").replace(/_/g," ").toUpperCase());
- const rows=filtered.map((p,i)=>'<tr><td class="lb-rank">'+(i+1)+'</td><td><div class="lb-player"><span class="lb-avatar">'+initials(p.username)+'</span><span><strong>'+safeText(p.username)+'</strong><small>'+safeText(p.position||"PLAYER")+'</small></span></div></td><td>'+safeText(p.team_name||"—")+'</td><td>'+Number(p.games_played||0)+'</td>'+metricKeys.map(k=>'<td>'+(p.stats&&p.stats[k]!==undefined?safeText(p.stats[k]):"—")+'</td>').join("")+'</tr>').join("");
- root.innerHTML=filtered.length?'<table class="leaderboard-table"><thead><tr><th>#</th><th>Player</th><th>Team</th><th>GP</th>'+labels.map(x=>'<th>'+x+'</th>').join("")+'</tr></thead><tbody>'+rows+'</tbody></table>':'<div class="lb-empty">No player records are available in this category yet.</div>';
+ const rows=filtered.map((p,i)=>'<tr><td class="lb-rank">'+(i+1)+'</td><td><div class="lb-player"><span class="lb-avatar" data-roblox-name="'+safeText(p.username)+'">'+initials(p.username)+'</span><span><strong>'+safeText(p.username)+'</strong><small>'+safeText(p.position||"PLAYER")+'</small></span></div></td><td>'+safeText(p.team_name||"—")+'</td><td>'+Number(p.games_played||0)+'</td>'+metricKeys.map(k=>'<td>'+(p.stats&&p.stats[k]!==undefined?safeText(p.stats[k]):"—")+'</td>').join("")+'</tr>').join("");
+ root.innerHTML=filtered.length?'<table class="leaderboard-table"><thead><tr><th>#</th><th>Player</th><th>Team</th><th>GP</th>'+labels.map(x=>'<th>'+x+'</th>').join("")+'</tr></thead><tbody>'+rows+'</tbody></table>':'<div class="lb-empty">No player records are available in this category yet.</div>';hydrateRobloxAvatars(root);
 }
 
 const main=document.getElementById("main"),home=document.getElementById("homePage"),generic=document.getElementById("genericPage");
@@ -117,13 +117,32 @@ else if(page==="replays")body='<div class="empty"><strong>No replays published y
 else if(page==="news")body='<div class="sectionhead"><strong>Latest Game Recap</strong><span class="muted">GAME RECAP</span></div><div class="article"><div><div class="eyebrow">FINAL • JACKSONVILLE JAGUARS 55, ATLANTA FALCONS 54</div><h3>Jaguars edge Falcons 55–54 in a one-point thriller</h3><p>Jacksonville escaped with a one-point win in a 109-point game. The report lists 1,280 combined passing yards, 17 passing touchdowns and 11 total interceptions between the two quarterbacks.</p><a class="bluebtn" href="#" data-page="stats">View complete player stats →</a></div><div class="matchpreview"><div>JAX<small>55</small></div><div>ATL<small>54</small></div></div></div><div class="sectionhead"><strong>Previous result</strong><span class="muted">GAME RECAP</span></div><div style="padding:15px"><div class="eyebrow">FINAL • ATLANTA FALCONS 49, GREEN BAY PACKERS 36</div><h3 style="font-size:19px;margin:7px 0">Falcons outlast Packers in a 49–36 offensive shootout</h3><p style="color:#a4adbb;font-size:12px;line-height:1.7">Atlanta and Green Bay combined for 85 points. Atlanta finished in front, 49–36, in the previously reported game. Its player statistics remain available in the earlier game report.</p></div>';
 else if(page==="leagues")body='<div class="article"><div><div class="leaguepill"><span class="leaguebadge">V</span> VFA Football</div><p style="margin-top:10px">League hub, teams, standings, schedule and statistics.</p></div><a class="bluebtn" href="#" data-page="teams">View teams →</a></div>';
 generic.innerHTML='<div class="card pagehead"><div class="eyebrow">ASN NETWORK</div><h2>'+title+'</h2><p>'+desc+'</p></div><div class="card">'+body+'</div>';
-home.classList.add("hidden");generic.classList.remove("hidden");}
+home.classList.add("hidden");generic.classList.remove("hidden");if(page==="stats")hydrateRobloxAvatars(generic);}
 function go(page){if(page==="home"){home.classList.remove("hidden");generic.classList.add("hidden")}else {pageMarkup(page);if(page==="legacy")loadLegacyArchive();if(page==="admin")renderAdminPanel();}document.querySelectorAll("[data-page]").forEach(el=>el.classList.toggle("active",el.dataset.page===page));window.scrollTo({top:0,behavior:"smooth"})}
 document.addEventListener("click",e=>{const statTab=e.target.closest("[data-stat-tab]");if(statTab){activeStatsCategory=statTab.dataset.statTab;pageMarkup("stats");return;}const legacyTab=e.target.closest("[data-legacy-tab]");if(legacyTab){activeLegacyCategory=legacyTab.dataset.legacyTab;renderLegacyPlayers(window.asnLegacyPlayers||[]);document.querySelectorAll("[data-legacy-tab]").forEach(b=>b.classList.toggle("active",b===legacyTab));return;}const el=e.target.closest("[data-page]");if(el){e.preventDefault();go(el.dataset.page)}});
 // Private, unlisted admin entry point. Open the exact URL /#asn-private-manager.
 function checkPrivateAdminRoute(){if(window.location.hash==="#asn-private-manager")go("admin");}
 window.addEventListener("hashchange",checkPrivateAdminRoute);
 document.getElementById("search").addEventListener("keydown",e=>{if(e.key==="Enter"){go("teams");const q=e.target.value.toLowerCase();document.querySelectorAll(".teamtile").forEach(t=>t.classList.toggle("hidden",!t.textContent.toLowerCase().includes(q)))}});document.getElementById("year").textContent=new Date().getFullYear();
+async function hydrateRobloxAvatars(root){
+ const nodes=Array.from((root||document).querySelectorAll("[data-roblox-name]"));
+ if(!nodes.length)return;
+ const names=[...new Set(nodes.map(n=>n.dataset.robloxName).filter(Boolean))];
+ try{
+  const lookup=await fetch("https://users.roblox.com/v1/usernames/users",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({usernames:names,excludeBannedUsers:false})});
+  if(!lookup.ok)return;
+  const found=(await lookup.json()).data||[];
+  const ids=found.map(x=>x.id).filter(Boolean);
+  if(!ids.length)return;
+  const thumbs=await fetch("https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds="+ids.join(",")+"&size=150x150&format=Png&isCircular=true");
+  if(!thumbs.ok)return;
+  const pictures=(await thumbs.json()).data||[];
+  const byName=new Map(found.map(u=>[String(u.requestedUsername||u.name).toLowerCase(),u.id]));
+  const byId=new Map(pictures.map(p=>[String(p.targetId),p.imageUrl]));
+  nodes.forEach(node=>{const id=byName.get(String(node.dataset.robloxName).toLowerCase()),url=id&&byId.get(String(id));if(url){node.style.backgroundImage="url("+JSON.stringify(url)+")";node.textContent="";node.title=node.dataset.robloxName+" Roblox avatar";}});
+ }catch(e){console.warn("Roblox avatar lookup unavailable",e);}
+}
+
 function loadRobloxProfiles(){document.querySelectorAll("[data-roblox]").forEach(row=>{const username=row.dataset.roblox;row.title="Open Roblox profile/search for @"+username;const img=row.querySelector(".robloxavatar");if(img){img.onerror=()=>{img.removeAttribute("src");img.alt=username.slice(0,1).toUpperCase();img.classList.add("avatarfallback");};}})}
 loadRobloxProfiles();
 
@@ -155,10 +174,11 @@ function renderAdminPanel(){
  const status=()=>document.getElementById("adminStatus");
  const showStatus=(m)=>{const s=status();if(s)s.textContent=m;};
  const drawManager=()=>{
-  root.innerHTML='<div class="auth-panel"><div class="admin-top"><div><div class="eyebrow">ACCESS VERIFIED</div><h3>Season 5 Import Center</h3><p>Choose a JSON, TXT, or CSV file, preview it, then publish the records to the public Legacy archive.</p></div><button class="secondary" id="adminLock">Lock manager</button></div><div class="import-drop"><strong>Import Season 5 statistics</strong><p>JSON or TXT files can contain players and games; CSV files import player statistics.</p><input id="season5File" type="file" accept=".json,.txt,.csv,application/json,text/plain,text/csv" multiple><div class="auth-actions"><button id="season5Preview" class="secondary">Preview file</button><button id="season5Publish" class="import-action" disabled>Publish Season 5 data</button></div></div><div class="import-preview" id="season5PreviewBox">Choose one or more JSON, TXT, or CSV files, then preview the combined records.</div><div class="auth-status" id="adminStatus" aria-live="polite"></div></div>';
+  root.innerHTML='<div class="auth-panel"><div class="admin-top"><div><div class="eyebrow">ACCESS VERIFIED</div><h3>Season 5 Import Center</h3><p>Choose a JSON, TXT, or CSV file, preview it, then publish the records to the public Legacy archive.</p></div><button class="secondary" id="adminLock">Lock manager</button></div><div class="import-drop"><strong>Import Season 5 statistics</strong><p>JSON or TXT files can contain players and games; CSV files import player statistics.</p><input id="season5File" type="file" accept=".json,.txt,.csv,application/json,text/plain,text/csv" multiple><div class="auth-actions"><button id="season5Preview" class="secondary">Preview file</button><button id="season5Publish" class="import-action" disabled>Publish Season 5 data</button><button id="syncRobloxProfiles" class="secondary">Sync Roblox avatars</button></div></div><div class="import-preview" id="season5PreviewBox">Choose one or more JSON, TXT, or CSV files, then preview the combined records.</div><div class="auth-status" id="adminStatus" aria-live="polite"></div></div>';
   document.getElementById("adminLock").onclick=()=>{adminAccessCode=null;pendingSeason5Import=null;renderAdminPanel();};
   document.getElementById("season5Preview").onclick=previewSeason5File;
   document.getElementById("season5Publish").onclick=publishSeason5File;
+  document.getElementById("syncRobloxProfiles").onclick=syncRobloxProfiles;
  };
  if(adminAccessCode){drawManager();return;}
  root.innerHTML='<div class="auth-panel"><div class="eyebrow">PRIVATE ACCESS</div><h3>ASN Season Manager</h3><p>Enter the private access code to open the Season 5 import center. The code is checked securely by the server.</p><label for="adminAccessCode">Private access code</label><input id="adminAccessCode" type="password" autocomplete="off" placeholder="Enter access code"><div class="auth-actions"><button id="adminUnlock">Unlock manager</button></div><div class="auth-status" id="adminStatus" aria-live="polite"></div></div>';
@@ -230,6 +250,21 @@ function toGameRow(g,index){
  const key=String(g.game_key||g.game_id||g.id||[home,away,g.played_at||g.date||hs+"-"+as].join("-"));
  return {game_key:key,home_team:home,away_team:away,home_score:hs,away_score:as,played_at:g.played_at||g.date||null,game_data:g,updated_at:new Date().toISOString()};
 }
+async function syncRobloxProfiles(){
+ const status=document.getElementById("adminStatus"),button=document.getElementById("syncRobloxProfiles");
+ if(!adminAccessCode){if(status)status.textContent="Unlock the manager first.";return;}
+ if(button)button.disabled=true;
+ if(status)status.textContent="Looking up verified Roblox accounts…";
+ try{
+  const response=await fetch(ASN_SUPABASE_URL+"/functions/v1/asn-season5-admin",{method:"POST",headers:{"Content-Type":"application/json","apikey":ASN_SUPABASE_KEY,"x-asn-admin-code":adminAccessCode},body:JSON.stringify({action:"sync_profiles"})});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(result.error||("HTTP "+response.status));
+  if(status)status.textContent="Roblox profile sync complete: "+(result.matched||0)+" matched; "+(result.unmatched||0)+" unmatched.";
+  loadLegacyArchive();
+ }catch(e){if(status)status.textContent="Roblox profile sync failed: "+e.message;}
+ finally{if(button)button.disabled=false;}
+}
+
 async function previewSeason5File(){
  const box=document.getElementById("season5PreviewBox"),btn=document.getElementById("season5Publish"),files=Array.from(document.getElementById("season5File")?.files||[]);
  pendingSeason5Import=null;btn.disabled=true;
