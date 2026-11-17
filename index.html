@@ -156,20 +156,26 @@ async function hydrateRobloxAvatars(root){
  if(!nodes.length)return;
  const names=[...new Set(nodes.map(n=>n.dataset.robloxName).filter(Boolean))];
  try{
-  const lookup=await fetch("https://users.roblox.com/v1/usernames/users",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({usernames:names,excludeBannedUsers:false})});
-  if(!lookup.ok)return;
-  const found=(await lookup.json()).data||[];
-  const ids=found.map(x=>x.id).filter(Boolean);
+  const allUsers=[];
+  for(let i=0;i<names.length;i+=100){
+   const batch=names.slice(i,i+100);
+   const lookup=await fetch("https://users.roblox.com/v1/usernames/users",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({usernames:batch,excludeBannedUsers:false})});
+   if(!lookup.ok)continue;
+   allUsers.push(...((await lookup.json()).data||[]));
+  }
+  const ids=allUsers.map(x=>x.id).filter(Boolean);
   if(!ids.length)return;
-  const thumbs=await fetch("https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds="+ids.join(",")+"&size=150x150&format=Png&isCircular=true");
-  if(!thumbs.ok)return;
-  const pictures=(await thumbs.json()).data||[];
-  const byName=new Map(found.map(u=>[String(u.requestedUsername||u.name).toLowerCase(),u.id]));
-  const byId=new Map(pictures.map(p=>[String(p.targetId),p.imageUrl]));
-  nodes.forEach(node=>{const id=byName.get(String(node.dataset.robloxName).toLowerCase()),url=id&&byId.get(String(id));if(url){node.style.backgroundImage="url("+JSON.stringify(url)+")";node.textContent="";node.title=node.dataset.robloxName+" Roblox avatar";}});
+  const pictureMap=new Map();
+  for(let i=0;i<ids.length;i+=100){
+   const batch=ids.slice(i,i+100);
+   const thumbs=await fetch("https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds="+batch.join(",")+"&size=150x150&format=Png&isCircular=true");
+   if(!thumbs.ok)continue;
+   for(const p of ((await thumbs.json()).data||[]))pictureMap.set(String(p.targetId),p.imageUrl);
+  }
+  const byName=new Map(allUsers.map(u=>[String(u.requestedUsername||u.name).toLowerCase(),u.id]));
+  nodes.forEach(node=>{const id=byName.get(String(node.dataset.robloxName).toLowerCase()),url=id&&pictureMap.get(String(id));if(url){node.style.backgroundImage="url("+JSON.stringify(url)+")";node.textContent="";node.title=node.dataset.robloxName+" Roblox avatar";}});
  }catch(e){console.warn("Roblox avatar lookup unavailable",e);}
 }
-
 function loadRobloxProfiles(){document.querySelectorAll("[data-roblox]").forEach(row=>{const username=row.dataset.roblox;row.title="Open Roblox profile/search for @"+username;const img=row.querySelector(".robloxavatar");if(img){img.onerror=()=>{img.removeAttribute("src");img.alt=username.slice(0,1).toUpperCase();img.classList.add("avatarfallback");};}})}
 loadRobloxProfiles();
 
