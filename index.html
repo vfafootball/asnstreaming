@@ -123,25 +123,25 @@ function renderAdminPanel(){
  };
 }
 function parseVfaGameReport(raw){
- const lines=raw.replace(/^\\uFEFF/,"").split(/\\r?\\n/);
+ const lines=raw.replace(/^\uFEFF/,"").split(/\r?\n/);
  const lineValue=(prefix)=>{const line=lines.find(v=>v.trim().startsWith(prefix));return line?line.slice(line.indexOf(":")+1).trim():"";};
- const scoreLine=lines.find(v=>/^Score:\\s*/i.test(v.trim()))||"";
- const scoreMatch=scoreLine.match(/^Score:\\s*(.+?)\\s+(\\d+)\\s*-\\s*(\\d+)\\s+(.+)$/i);
+ const scoreLine=lines.find(v=>/^Score:\s*/i.test(v.trim()))||"";
+ const scoreMatch=scoreLine.match(/^Score:\s*(.+?)\s+(\d+)\s*-\s*(\d+)\s+(.+)$/i);
  if(!scoreMatch)throw new Error("This looks like a VFA game report, but its Score line could not be read.");
  const gameKey=lineValue("Game Identifier")||("report-"+scoreMatch[1]+"-"+scoreMatch[4]+"-"+scoreMatch[2]+"-"+scoreMatch[3]);
  const players=[];
  let current=null,role=null;
  for(const line of lines){
-  const heading=line.match(/^\\s*\\d+\\.\\s+(.+?)\\s+\\((?:<@([0-9]+)>|(Not linked))\\)\\s*$/);
+  const heading=line.match(/^\s*\d+\.\s+(.+?)\s+\((?:<@([0-9]+)>|(Not linked))\)\s*$/);
   if(heading){
    if(current)players.push(current);
    current={username:heading[1].trim(),player_key:heading[1].trim().toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,""),team_name:"",position:"",roblox_profile_url:"",games_played:1,stats:{},_roles:[]};
    role=null;
    continue;
   }
-  const roleMatch=line.match(/^\\s*\\[([A-Z0-9]+)\\]\\s*$/);
+  const roleMatch=line.match(/^\s*\[([A-Z0-9]+)\]\s*$/);
   if(roleMatch&&current){role=roleMatch[1].toLowerCase();if(!current._roles.includes(role.toUpperCase()))current._roles.push(role.toUpperCase());continue;}
-  const statMatch=line.match(/^\\s+([a-z][a-z0-9_]*):\\s*(-?\\d+(?:\\.\\d+)?)\\s*$/i);
+  const statMatch=line.match(/^\s+([a-z][a-z0-9_]*):\s*(-?\d+(?:\.\d+)?)\s*$/i);
   if(statMatch&&current&&role){
    const statName=statMatch[1].toLowerCase();
    const number=Number(statMatch[2]);
@@ -190,7 +190,7 @@ async function previewSeason5File(){
    const firstJson=Math.min(...[trimmed.indexOf("{"),trimmed.indexOf("[")].filter(n=>n>=0));
    const jsonText=Number.isFinite(firstJson)?trimmed.slice(firstJson):"";
    const isJson=jsonText.startsWith("{")||jsonText.startsWith("[");
-   if(/^Game Report\\s*[•-]/mi.test(trimmed)&&/^Score:/mi.test(trimmed)&&/^Player Stats:/mi.test(trimmed)){
+   if(/^Game Report\s*[•-]/mi.test(trimmed)&&/^Score:/mi.test(trimmed)&&/^Player Stats:/mi.test(trimmed)){
     const parsed=parseVfaGameReport(trimmed);
     combined.players.push(...parsed.players);combined.games.push(...parsed.games);
     messages.push(file.name+": "+parsed.players.length+" players, 1 game report");
