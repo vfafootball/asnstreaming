@@ -111,7 +111,7 @@ function statsLeaderboardMarkup(){
  const rows=activeStatsSeason==="playoffs"?[]:latestGamePlayers.filter(p=>p[c.field]&&Object.values(p[c.field]).some(v=>Number(v)>0)).filter(p=>activeStatsTeam==="all"||String(p.team||"").toLowerCase()===activeStatsTeam.toLowerCase()).sort((a,b)=>(Number(b[c.field][c.sort])||0)-(Number(a[c.field][c.sort])||0));
  const statValue=(p,k)=>{const v=Number(p[c.field][k]||0);return activeStatsMode==="pergame"?(v/Math.max(1,Number(p.games_played||1))).toFixed(1).replace(/\.0$/,""):String(p[c.field][k]??"—");};
  const head='<thead><tr><th>PLAYER</th><th>GP</th>'+c.labels.map((x,i)=>'<th class="'+(i===0?'sorted':'')+'">'+x+(i===0?' ↓':'')+'</th>').join('')+'</tr></thead>';
- const body=rows.map(p=>'<tr><td><div class="player-cell"><span class="lb-avatar" data-roblox-name="'+safeText(p.name)+'">'+initials(p.name)+'</span><span><strong>'+safeText(p.name)+'</strong><small>'+safeText((p.positions||[]).join(" / "))+'</small></span></div></td><td>1</td>'+c.keys.map((k,i)=>'<td class="'+(i===0?'sorted':'')+'">'+statValue(p,k)+'</td>').join('')+'</tr>').join('');
+ const body=rows.map(p=>'<tr><td><div class="player-cell"><span class="lb-avatar" data-roblox-name="'+safeText(p.name)+'">'+initials(p.name)+'</span><span><strong>'+safeText(p.name)+'</strong><small>'+safeText((p.positions||[]).join(" / "))+'</small></span></div></td><td>'+Math.max(1,Number(p.games_played||1))+'</td>'+c.keys.map((k,i)=>'<td class="'+(i===0?'sorted':'')+'">'+statValue(p,k)+'</td>').join('')+'</tr>').join('');
  const teamOptions='<option value="all">All teams</option>'+teams.map(t=>'<option value="'+safeText(t[0])+'" '+(activeStatsTeam===t[0]?'selected':'')+'>'+safeText(t[0])+'</option>').join('');
  const toggle=(key,label,value,active)=>'<button data-stats-toggle="'+key+'" data-value="'+value+'" class="'+(active===value?'active':'')+'">'+label+'</button>';
  return '<div class="leaderboard-card"><div class="leaderboard-title"><div><small>ASN • VFA FOOTBALL</small><h3>'+(activeStatsSeason==="regular"?"Regular-Season":"Playoff")+' Stats</h3></div><span class="muted">PLAYER LEADERS</span></div><div class="stats-toolbar"><div class="stats-group">'+toggle("view","Player stats","player",activeStatsView)+toggle("view","Team stats","team",activeStatsView)+'</div><div class="stats-group">'+toggle("season","Regular season","regular",activeStatsSeason)+toggle("season","Playoffs","playoffs",activeStatsSeason)+'</div><select id="statsTeamSelect" aria-label="Select team">'+teamOptions+'</select><div class="stats-group">'+["QB","RB","WR","DEF","DB","K"].map(k=>'<button data-stats-position="'+k+'" class="'+(activeStatsCategory===k?'active':'')+'">'+k+'</button>').join('')+'</div><span class="spacer"></span><div class="stats-group">'+toggle("mode","Totals","totals",activeStatsMode)+toggle("mode","Per game","pergame",activeStatsMode)+'</div></div>'+(activeStatsView==="team"?'<div class="lb-empty" style="padding:42px 15px"><strong>Team stats</strong>Team-attributed statistics will appear here as team records are published.</div>':rows.length?'<div class="leaderboard-scroll"><table class="stats-table">'+head+'<tbody>'+body+'</tbody></table></div><div class="stats-note">'+(activeStatsMode==="pergame"?"Per-game averages are calculated from games played.":"Showing total statistics from published reports.")+' Roblox headshots are matched by exact username.</div>':'<div class="lb-empty" style="padding:42px 15px"><strong>No '+(activeStatsSeason==="playoffs"?"playoff ":"")+activeStatsCategory+' stats yet</strong>There are no published statistics for this selection.</div>')+'</div>';
@@ -210,10 +210,11 @@ function renderAdminPanel(){
  const status=()=>document.getElementById("adminStatus");
  const showStatus=(m)=>{const s=status();if(s)s.textContent=m;};
  const drawManager=()=>{
-  root.innerHTML='<div class="auth-panel"><div class="admin-top"><div><div class="eyebrow">ACCESS VERIFIED</div><h3>Season 5 Import Center</h3><p>Choose a JSON, TXT, or CSV file, preview it, then publish the records to the public Legacy archive.</p></div><button class="secondary" id="adminLock">Lock manager</button></div><div class="import-drop"><strong>Import Season 5 statistics</strong><p>JSON or TXT files can contain players and games; CSV files import player statistics.</p><input id="season5File" type="file" accept=".json,.txt,.csv,application/json,text/plain,text/csv" multiple><div class="auth-actions"><button id="season5Preview" class="secondary">Preview file</button><button id="season5Publish" class="import-action" disabled>Publish Season 5 data</button><button id="syncRobloxProfiles" class="secondary">Sync Roblox avatars</button></div></div><div class="import-preview" id="season5PreviewBox">Choose one or more JSON, TXT, or CSV files, then preview the combined records.</div><div class="auth-status" id="adminStatus" aria-live="polite"></div></div>';
+  root.innerHTML='<div class="auth-panel"><div class="admin-top"><div><div class="eyebrow">ACCESS VERIFIED</div><h3>Season 5 Import Center</h3><p>Choose a JSON, TXT, or CSV file, preview it, then publish the records to the public Legacy archive.</p></div><button class="secondary" id="adminLock">Lock manager</button></div><div class="import-drop"><strong>Import Season 5 statistics</strong><p>JSON or TXT files can contain players and games; CSV files import player statistics.</p><input id="season5File" type="file" accept=".json,.txt,.csv,application/json,text/plain,text/csv" multiple><div class="auth-actions"><button id="season5Preview" class="secondary">Preview file</button><button id="season5Publish" class="import-action" disabled>Publish Season 5 data</button><button id="rebuildSeason5Archive" class="secondary">Rebuild from saved reports</button><button id="syncRobloxProfiles" class="secondary">Sync Roblox avatars</button></div></div><div class="import-preview" id="season5PreviewBox">Choose one or more JSON, TXT, or CSV files, then preview the combined records.</div><div class="auth-status" id="adminStatus" aria-live="polite"></div></div>';
   document.getElementById("adminLock").onclick=()=>{adminAccessCode=null;pendingSeason5Import=null;renderAdminPanel();};
   document.getElementById("season5Preview").onclick=previewSeason5File;
   document.getElementById("season5Publish").onclick=publishSeason5File;
+  document.getElementById("rebuildSeason5Archive").onclick=rebuildSeason5Archive;
   document.getElementById("syncRobloxProfiles").onclick=syncRobloxProfiles;
  };
  if(adminAccessCode){drawManager();return;}
@@ -286,6 +287,21 @@ function toGameRow(g,index){
  const key=String(g.game_key||g.game_id||g.id||[home,away,g.played_at||g.date||hs+"-"+as].join("-"));
  return {game_key:key,home_team:home,away_team:away,home_score:hs,away_score:as,played_at:g.played_at||g.date||null,game_data:g,updated_at:new Date().toISOString()};
 }
+async function rebuildSeason5Archive(){
+ const status=document.getElementById("adminStatus"),button=document.getElementById("rebuildSeason5Archive");
+ if(!adminAccessCode){if(status)status.textContent="Unlock the manager first.";return;}
+ if(button)button.disabled=true;
+ if(status)status.textContent="Rebuilding every player total from all saved Season 5 game reports…";
+ try{
+  const response=await fetch(ASN_SUPABASE_URL+"/functions/v1/asn-season5-admin",{method:"POST",headers:{"Content-Type":"application/json","apikey":ASN_SUPABASE_KEY,"x-asn-admin-code":adminAccessCode},body:JSON.stringify({action:"rebuild_archive"})});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(result.error||("HTTP "+response.status));
+  if(status)status.textContent="Archive rebuilt: "+(result.games||0)+" unique game reports and "+(result.players||0)+" players. Games played and stats are now aggregated across reports.";
+  await loadLegacyArchive();
+ }catch(e){if(status)status.textContent="Archive rebuild failed: "+e.message;}
+ finally{if(button)button.disabled=false;}
+}
+
 async function syncRobloxProfiles(){
  const status=document.getElementById("adminStatus"),button=document.getElementById("syncRobloxProfiles");
  if(!adminAccessCode){if(status)status.textContent="Unlock the manager first.";return;}
