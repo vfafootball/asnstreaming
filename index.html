@@ -66,6 +66,7 @@
 .stats-table .player-cell strong{display:block;color:#f1f4f8;font-size:11px}
 .stats-table .player-cell small{display:block;color:#7f8999;font-size:9px}
 .stats-note{padding:8px 16px 12px;color:#858c9b;font-size:9px}
+.s6-wrap{margin-top:14px}.s6-meta{display:flex;gap:10px;flex-wrap:wrap;padding:0 16px 12px;color:#8993a2;font-size:10px}.s6-meta strong{color:#f2f5fa}.s6-tabs{display:flex;gap:5px;flex-wrap:wrap;padding:8px 16px 12px;border-bottom:1px solid #222630}.s6-tabs button{background:#1a1e27;color:#aab3c2;padding:7px 11px;border-radius:20px;font-size:10px;font-weight:850}.s6-tabs button.active{background:#2d91df;color:#06111c}.s6-filter{margin:10px 16px;background:#191c23;color:#e5e9ef;border:1px solid #30343e;border-radius:20px;padding:8px 14px;font-size:10px}.s6-score{padding:10px 16px;color:#aab3c2;font-size:10px;border-bottom:1px solid #222630}.s6-score strong{color:#fff;font-size:14px;margin-right:8px}
 
 </style></head>
 <body>
@@ -96,8 +97,51 @@ let activeStatsView="player";
 let activeStatsSeason="regular";
 let activeStatsMode="pergame";
 let activeStatsTeam="all";
+let activeSeason6Category="QB";
+let activeSeason6Team="all";
+let season6Players=[];
+let season6Games=[];
 let activeLegacyCategory="all";
 function initials(name){return String(name||"?").trim().split(/\s+/).slice(0,2).map(x=>x[0]||"").join("").toUpperCase();}
+function season6LeaderboardShell(){
+ const cats=["QB","RB","WR","DEF","DB","K"];
+ return '<div class="leaderboard-card s6-wrap"><div class="leaderboard-title"><div><small>ASN • VFA FOOTBALL</small><h3>Season 6 Leaderboards</h3></div><span class="muted">LIVE SEASON TOTALS</span></div><div class="s6-meta" id="season6Summary">Loading Season 6 records…</div><div class="s6-score" id="season6LatestGame"></div><div class="s6-tabs">'+cats.map(c=>'<button data-s6-category="'+c+'" class="'+(activeSeason6Category===c?'active':'')+'">'+c+'</button>').join('')+'</div><select class="s6-filter" id="season6TeamSelect" aria-label="Filter Season 6 by team"><option value="all">All teams</option></select><div class="leaderboard-scroll" id="season6Leaderboard"><div class="lb-empty">Loading Season 6 player totals…</div></div><div class="stats-note">Season 6 statistics are kept separate from the Season 5 Legacy archive. Player headshots use exact Roblox username matching.</div></div>';
+}
+function renderSeason6Leaderboard(){
+ const root=document.getElementById("season6Leaderboard");if(!root)return;
+ const config={
+  QB:{field:"qb",keys:["comp","yds","td","int","sack","long"],labels:["COMP","YDS","TD","INT","SACK","LONG"],sort:"yds"},
+  RB:{field:"rb",keys:["att","yds","td","long","ypa"],labels:["ATT","YDS","TD","LONG","YPA"],sort:"yds"},
+  WR:{field:"wr",keys:["catch","tgt","yds","td","long"],labels:["REC","TGTS","YDS","TD","LONG"],sort:"yds"},
+  DEF:{field:"def",keys:["tack","sack","ffum","safe","rec"],labels:["TACKLES","SACKS","FF","SAFETIES","FUMBLE REC"],sort:"sack"},
+  DB:{field:"db",keys:["int","tgt","defl","yds_allow","td_allow"],labels:["INT","TGTS","SWATS","YDS ALLOWED","TD ALLOWED"],sort:"int"},
+  K:{field:"k",keys:["good","att","pat_good","pat_att","long"],labels:["FG MADE","FG ATT","XP MADE","XP ATT","LONG"],sort:"good"}
+ };
+ const c=config[activeSeason6Category]||config.QB;
+ const teamsList=[...new Set(season6Players.map(p=>p.team_name).filter(t=>t&&t.toLowerCase()!=="nil"))].sort();
+ const select=document.getElementById("season6TeamSelect");
+ if(select){const old=activeSeason6Team;select.innerHTML='<option value="all">All teams</option>'+teamsList.map(t=>'<option value="'+safeText(t)+'">'+safeText(t)+'</option>').join("");select.value=teamsList.includes(old)?old:"all";activeSeason6Team=select.value;}
+ const rows=season6Players.filter(p=>p.stats&&p.stats[c.field]&&Object.values(p.stats[c.field]).some(v=>Number(v)!==0)).filter(p=>activeSeason6Team==="all"||p.team_name===activeSeason6Team).sort((a,b)=>(Number(b.stats[c.field][c.sort])||0)-(Number(a.stats[c.field][c.sort])||0));
+ const head='<thead><tr><th>#</th><th>PLAYER</th><th>TEAM</th><th>GP</th>'+c.labels.map((x,i)=>'<th class="'+(i===1?'lb-stat-primary':'')+'">'+x+'</th>').join("")+'</tr></thead>';
+ const body=rows.map((p,i)=>{const d=p.stats[c.field]||{};return '<tr><td class="lb-rank">'+(i+1)+'</td><td><div class="player-cell"><span class="lb-avatar" data-roblox-name="'+safeText(p.username)+'">'+initials(p.display_name||p.username)+'</span><span><strong>'+safeText(p.display_name||p.username)+'</strong><small>'+safeText(p.position||"PLAYER")+'</small></span></div></td><td>'+safeText(p.team_name||"—")+'</td><td>'+Number(p.games_played||1)+'</td>'+c.keys.map(k=>'<td>'+(d[k]===undefined?"—":safeText(d[k]))+'</td>').join("")+'</tr>';}).join("");
+ root.innerHTML=rows.length?'<table class="stats-table">'+head+'<tbody>'+body+'</tbody></table>':'<div class="lb-empty"><strong>No Season 6 '+activeSeason6Category+' leaders yet</strong>No player stats were recorded for this position in the imported games.</div>';
+ root.querySelectorAll("[data-roblox-name]").length&&hydrateRobloxAvatars(root);
+ document.querySelectorAll("[data-s6-category]").forEach(b=>b.classList.toggle("active",b.dataset.s6Category===activeSeason6Category));
+}
+async function loadSeason6Leaderboard(){
+ const summary=document.getElementById("season6Summary");if(!summary)return;
+ if(!asnDb){summary.textContent="Season 6 database is unavailable.";return;}
+ const [playersRes,gamesRes]=await Promise.all([
+  asnDb.from("asn_season6_player_stats").select("*").order("username"),
+  asnDb.from("asn_season6_games").select("*").order("played_at",{ascending:false})
+ ]);
+ if(playersRes.error||gamesRes.error){summary.textContent="Season 6 statistics could not be loaded.";return;}
+ season6Players=playersRes.data||[];season6Games=gamesRes.data||[];
+ summary.innerHTML='<span><strong>'+season6Games.length+'</strong> game reports</span><span><strong>'+season6Players.length+'</strong> player records</span><span><strong>'+new Set(season6Players.map(p=>p.team_name).filter(t=>t&&t.toLowerCase()!=="nil")).size+'</strong> teams represented</span>';
+ const latest=season6Games[0],gameEl=document.getElementById("season6LatestGame");
+ if(gameEl)gameEl.innerHTML=latest?'<strong>'+safeText(latest.score_text)+'</strong> Latest imported game score • '+(latest.team_names||[]).map(safeText).join(" / ")+' <span style="color:#788292"> (team-to-score order was not provided)</span>':'No Season 6 games imported yet.';
+ renderSeason6Leaderboard();
+}
 function statsLeaderboardMarkup(){
  const cfg={
   QB:{field:"pass",keys:["c","y","sack","long","int","td","a"],labels:["COMP","YDS","SACK","LONG","INT","TD","ATT"],sort:"y"},
@@ -139,17 +183,17 @@ else if(page==="admin")body='<div class="auth-wrap"><div id="adminRoot"><div cla
 else if(page==="teams")body=teamGrid();
 else if(page==="standings"){const records={"Jacksonville Jaguars":[1,0],"Atlanta Falcons":[1,1],"Green Bay Packers":[0,1]};const sortedTeams=[...teams].sort((a,b)=>{const ra=records[a[0]],rb=records[b[0]];if(ra&&!rb)return -1;if(!ra&&rb)return 1;if(!ra&&!rb)return a[0].localeCompare(b[0]);const pa=ra[0]/(ra[0]+ra[1]),pb=rb[0]/(rb[0]+rb[1]);return pb-pa||rb[0]-ra[0]||a[0].localeCompare(b[0])});body='<table class="dataTable"><thead><tr><th>Team</th><th>W</th><th>L</th><th>T</th><th>PCT</th></tr></thead><tbody>'+sortedTeams.map(t=>{const r=records[t[0]];return '<tr><td><span class="teamname"><img src="https://a.espncdn.com/i/teamlogos/nfl/500/'+t[1]+'.png" alt="">'+t[0]+'</span></td><td>'+(r?r[0]:'—')+'</td><td>'+(r?r[1]:'—')+'</td><td>0</td><td>'+(r?(r[0]/(r[0]+r[1])).toFixed(3):'—')+'</td></tr>'}).join('')+'</tbody></table><p class="muted" style="padding:12px">Records reflect the 2 reported finals: Jacksonville 55–54 Atlanta and Atlanta 49–36 Green Bay. Teams without a reported result are shown as —.</p>';}
 else if(page==="schedule")body='<div class="sectionhead"><strong>Completed games</strong><span class="muted">VFA FOOTBALL</span></div><div class="resultbanner"><div class="teamresult winner"><img src="https://a.espncdn.com/i/teamlogos/nfl/500/jax.png">Jacksonville Jaguars</div><div style="text-align:center"><div class="eyebrow">FINAL</div><div class="score">55 – 54</div><small style="color:#a4adbb">GAME ID: '+latestGameId+'</small></div><div class="teamresult"><img src="https://a.espncdn.com/i/teamlogos/nfl/500/atl.png">Atlanta Falcons</div></div><div class="empty"><strong>Jacksonville won by one point</strong>Jacksonville Jaguars defeated Atlanta Falcons, 55–54. View the complete report in Player Stats.</div><div class="resultbanner"><div class="teamresult winner"><img src="https://a.espncdn.com/i/teamlogos/nfl/500/atl.png">Atlanta Falcons</div><div class="score">49 – 36</div><div class="teamresult"><img src="https://a.espncdn.com/i/teamlogos/nfl/500/gb.png">Green Bay Packers</div></div><div class="empty"><strong>Final</strong>Atlanta Falcons defeated Green Bay Packers. View the player statistics in Player Stats.</div>';
-else if(page==="stats"){body=statsLeaderboardMarkup();}
+else if(page==="stats"){body=statsLeaderboardMarkup()+season6LeaderboardShell();}
 
 else if(page==="live")body='<div class="empty"><strong>No games are live right now</strong>When a broadcast goes live, the stream and matchup information will appear here.</div>';
 else if(page==="replays")body='<div class="empty"><strong>No replays published yet</strong>Full replays, condensed games and highlights will be added after broadcasts.</div>';
 else if(page==="news")body='<div class="sectionhead"><strong>Latest Game Recap</strong><span class="muted">GAME RECAP</span></div><div class="article"><div><div class="eyebrow">FINAL • JACKSONVILLE JAGUARS 55, ATLANTA FALCONS 54</div><h3>Jaguars edge Falcons 55–54 in a one-point thriller</h3><p>Jacksonville escaped with a one-point win in a 109-point game. The report lists 1,280 combined passing yards, 17 passing touchdowns and 11 total interceptions between the two quarterbacks.</p><a class="bluebtn" href="#" data-page="stats">View complete player stats →</a></div><div class="matchpreview"><div>JAX<small>55</small></div><div>ATL<small>54</small></div></div></div><div class="sectionhead"><strong>Previous result</strong><span class="muted">GAME RECAP</span></div><div style="padding:15px"><div class="eyebrow">FINAL • ATLANTA FALCONS 49, GREEN BAY PACKERS 36</div><h3 style="font-size:19px;margin:7px 0">Falcons outlast Packers in a 49–36 offensive shootout</h3><p style="color:#a4adbb;font-size:12px;line-height:1.7">Atlanta and Green Bay combined for 85 points. Atlanta finished in front, 49–36, in the previously reported game. Its player statistics remain available in the earlier game report.</p></div>';
 else if(page==="leagues")body='<div class="article"><div><div class="leaguepill"><span class="leaguebadge">V</span> VFA Football</div><p style="margin-top:10px">League hub, teams, standings, schedule and statistics.</p></div><a class="bluebtn" href="#" data-page="teams">View teams →</a></div>';
 generic.innerHTML='<div class="card pagehead"><div class="eyebrow">ASN NETWORK</div><h2>'+title+'</h2><p>'+desc+'</p></div><div class="card">'+body+'</div>';
-home.classList.add("hidden");generic.classList.remove("hidden");if(page==="stats")hydrateRobloxAvatars(generic);}
+home.classList.add("hidden");generic.classList.remove("hidden");if(page==="stats"){hydrateRobloxAvatars(generic);loadSeason6Leaderboard();}}
 function go(page){if(page==="home"){home.classList.remove("hidden");generic.classList.add("hidden")}else {pageMarkup(page);if(page==="legacy")loadLegacyArchive();if(page==="admin")renderAdminPanel();}document.querySelectorAll("[data-page]").forEach(el=>el.classList.toggle("active",el.dataset.page===page));window.scrollTo({top:0,behavior:"smooth"})}
-document.addEventListener("change",e=>{if(e.target&&e.target.id==="statsTeamSelect"){activeStatsTeam=e.target.value;pageMarkup("stats");}});
-document.addEventListener("click",e=>{const statsToggle=e.target.closest("[data-stats-toggle]");if(statsToggle){const key=statsToggle.dataset.statsToggle,value=statsToggle.dataset.value;if(key==="view")activeStatsView=value;if(key==="season")activeStatsSeason=value;if(key==="mode")activeStatsMode=value;pageMarkup("stats");return;}const statsPosition=e.target.closest("[data-stats-position]");if(statsPosition){activeStatsCategory=statsPosition.dataset.statsPosition;pageMarkup("stats");return;}const legacyTab=e.target.closest("[data-legacy-tab]");if(legacyTab){activeLegacyCategory=legacyTab.dataset.legacyTab;renderLegacyPlayers(window.asnLegacyPlayers||[]);document.querySelectorAll("[data-legacy-tab]").forEach(b=>b.classList.toggle("active",b===legacyTab));return;}const el=e.target.closest("[data-page]");if(el){e.preventDefault();go(el.dataset.page)}});
+document.addEventListener("change",e=>{if(e.target&&e.target.id==="statsTeamSelect"){activeStatsTeam=e.target.value;pageMarkup("stats");}if(e.target&&e.target.id==="season6TeamSelect"){activeSeason6Team=e.target.value;renderSeason6Leaderboard();}});
+document.addEventListener("click",e=>{const statsToggle=e.target.closest("[data-stats-toggle]");if(statsToggle){const key=statsToggle.dataset.statsToggle,value=statsToggle.dataset.value;if(key==="view")activeStatsView=value;if(key==="season")activeStatsSeason=value;if(key==="mode")activeStatsMode=value;pageMarkup("stats");return;}const statsPosition=e.target.closest("[data-stats-position]");if(statsPosition){activeStatsCategory=statsPosition.dataset.statsPosition;pageMarkup("stats");return;}const s6Tab=e.target.closest("[data-s6-category]");if(s6Tab){activeSeason6Category=s6Tab.dataset.s6Category;renderSeason6Leaderboard();return;}const legacyTab=e.target.closest("[data-legacy-tab]");if(legacyTab){activeLegacyCategory=legacyTab.dataset.legacyTab;renderLegacyPlayers(window.asnLegacyPlayers||[]);document.querySelectorAll("[data-legacy-tab]").forEach(b=>b.classList.toggle("active",b===legacyTab));return;}const el=e.target.closest("[data-page]");if(el){e.preventDefault();go(el.dataset.page)}});
 // Private, unlisted admin entry point. Open the exact URL /#asn-private-manager.
 function checkPrivateAdminRoute(){if(window.location.hash==="#asn-private-manager")go("admin");}
 window.addEventListener("hashchange",checkPrivateAdminRoute);
