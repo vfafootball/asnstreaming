@@ -424,9 +424,9 @@ async function publishSeason5File(){
 let season6AdminCode=null;
 let pendingSeason6Json=null;
 function parseSeason6JsonText(raw){
- let text=String(raw||"").replace(/^\\uFEFF/,"").trim(),scoreText="";
+ let text=String(raw||"").replace(/^\uFEFF/,"").trim(),scoreText="";
  const split=text.indexOf("///");
- if(split>=0){scoreText=text.slice(0,split).trim().replace(/\\s*[-–]\\s*/," - ");text=text.slice(split+3).trim();}
+ if(split>=0){scoreText=text.slice(0,split).trim().replace(/\s*[-–]\s*/," - ");text=text.slice(split+3).trim();}
  const parsed=JSON.parse(text);
  if(!parsed||typeof parsed!=="object"||Array.isArray(parsed))throw new Error("The JSON root must be an object.");
  if(scoreText&&!parsed.score_text&&!parsed.score)parsed.score_text=scoreText;
@@ -449,7 +449,7 @@ function renderSeason6AdminPanel(){
     const games=Array.isArray(parsed.games)?parsed.games.length:(parsed.score_text||parsed.score?1:0);
     if(!players&&!games)throw new Error("No players or game result found. Check the JSON format.");
     pendingSeason6Json=parsed;btn.disabled=false;
-    box.textContent="JSON preview successful.\\nPlayer records: "+players+"\\nGame results: "+games+"\\nSeason: 6\\nDestination: Season 6 leaderboards only.\\n\\nNo Season 5 Legacy records will be changed.";
+    box.textContent="JSON preview successful.\nPlayer records: "+players+"\nGame results: "+games+"\nSeason: 6\nDestination: Season 6 leaderboards only.\n\nNo Season 5 Legacy records will be changed.";
    }catch(e){pendingSeason6Json=null;btn.disabled=true;box.textContent="Preview failed: "+e.message;}
   };
   document.getElementById("season6JsonPublish").onclick=async()=>{
@@ -461,7 +461,7 @@ function renderSeason6AdminPanel(){
     const result=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(result.error||("HTTP "+response.status));
     show("Season 6 import complete: "+(result.players||0)+" player records and "+(result.games||0)+" game results published. Season 5 Legacy was not touched.");
-    document.getElementById("season6JsonPreviewBox").textContent="Published successfully.\\nPlayers: "+(result.players||0)+"\\nGames: "+(result.games||0)+"\\nYou can import another JSON file.";
+    document.getElementById("season6JsonPreviewBox").textContent="Published successfully.\nPlayers: "+(result.players||0)+"\nGames: "+(result.games||0)+"\nYou can import another JSON file.";
     pendingSeason6Json=null;
    }catch(e){show("Season 6 import failed: "+e.message);btn.disabled=false;}
   };
