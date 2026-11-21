@@ -180,6 +180,7 @@ function pageMarkup(page){const title={live:"Live Now",replays:"Replays & Recaps
 if(page==="legacy")body='<div class="leaderboard-card"><div class="leaderboard-title"><div><small>ASN • VFA FOOTBALL</small><h3>Season 5 Archive</h3></div><span class="muted">HISTORICAL RECORDS</span></div><div class="archive-grid"><div class="archive-stat"><small>Season</small><strong>05</strong><span>Completed season archive</span></div><div class="archive-stat"><small>Games archived</small><strong id="legacyGameCount">—</strong><span>Published results</span></div><div class="archive-stat"><small>Players tracked</small><strong id="legacyPlayerCount">—</strong><span>Player records</span></div></div><div class="archive-note" id="legacyStatus">Loading the Season 5 archive…</div></div><div class="leaderboard-card"><div class="leaderboard-title"><div><small>VFA • SEASON 5</small><h3>Game Results</h3></div><span class="muted">FINAL SCORES</span></div><div class="leaderboard-scroll" id="legacyGames"><div class="lb-empty">Loading results…</div></div></div><div class="leaderboard-card"><div class="leaderboard-title"><div><small>VFA • SEASON 5</small><h3>Player Statistics</h3></div><span class="muted">LEADERBOARD</span></div><div class="leaderboard-tabs"><button class="active" data-legacy-tab="all">All</button><button data-legacy-tab="qb">Passing</button><button data-legacy-tab="wr">Receiving</button><button data-legacy-tab="db">Defense</button><button data-legacy-tab="kck">Kicking</button></div><div class="leaderboard-scroll" id="legacyPlayers"><div class="lb-empty">Loading player records…</div></div></div>';
 
 else if(page==="admin")body='<div class="auth-wrap"><div id="adminRoot"><div class="auth-panel"><div class="eyebrow">PRIVATE ACCESS</div><h3>ASN Season Manager</h3><p>Enter the private access code to open the Season 5 import center. The code is checked securely by the server.</p><label for="adminAccessCode">Private access code</label><input id="adminAccessCode" type="password" autocomplete="off" placeholder="Enter access code"><div class="auth-actions"><button id="adminUnlock">Unlock manager</button></div><div class="auth-status" id="adminStatus" aria-live="polite"></div></div></div></div>';
+else if(page==="season6admin")body='<div class="auth-wrap"><div id="season6AdminRoot"><div class="auth-panel"><div class="eyebrow">PRIVATE ACCESS</div><h3>ASN Season 6 Manager</h3><p>Private Season 6 JSON uploader. Only authorized access can publish records.</p><label for="season6AdminCode">Private access code</label><input id="season6AdminCode" type="password" autocomplete="off" placeholder="Enter private access code"><div class="auth-actions"><button id="season6AdminUnlock">Unlock Season 6 manager</button></div><div class="auth-status" id="season6AdminStatus" aria-live="polite"></div></div></div></div>';
 else if(page==="teams")body=teamGrid();
 else if(page==="standings"){const records={"Jacksonville Jaguars":[1,0],"Atlanta Falcons":[1,1],"Green Bay Packers":[0,1]};const sortedTeams=[...teams].sort((a,b)=>{const ra=records[a[0]],rb=records[b[0]];if(ra&&!rb)return -1;if(!ra&&rb)return 1;if(!ra&&!rb)return a[0].localeCompare(b[0]);const pa=ra[0]/(ra[0]+ra[1]),pb=rb[0]/(rb[0]+rb[1]);return pb-pa||rb[0]-ra[0]||a[0].localeCompare(b[0])});body='<table class="dataTable"><thead><tr><th>Team</th><th>W</th><th>L</th><th>T</th><th>PCT</th></tr></thead><tbody>'+sortedTeams.map(t=>{const r=records[t[0]];return '<tr><td><span class="teamname"><img src="https://a.espncdn.com/i/teamlogos/nfl/500/'+t[1]+'.png" alt="">'+t[0]+'</span></td><td>'+(r?r[0]:'—')+'</td><td>'+(r?r[1]:'—')+'</td><td>0</td><td>'+(r?(r[0]/(r[0]+r[1])).toFixed(3):'—')+'</td></tr>'}).join('')+'</tbody></table><p class="muted" style="padding:12px">Records reflect the 2 reported finals: Jacksonville 55–54 Atlanta and Atlanta 49–36 Green Bay. Teams without a reported result are shown as —.</p>';}
 else if(page==="schedule")body='<div class="sectionhead"><strong>Completed games</strong><span class="muted">VFA FOOTBALL</span></div><div class="resultbanner"><div class="teamresult winner"><img src="https://a.espncdn.com/i/teamlogos/nfl/500/jax.png">Jacksonville Jaguars</div><div style="text-align:center"><div class="eyebrow">FINAL</div><div class="score">55 – 54</div><small style="color:#a4adbb">GAME ID: '+latestGameId+'</small></div><div class="teamresult"><img src="https://a.espncdn.com/i/teamlogos/nfl/500/atl.png">Atlanta Falcons</div></div><div class="empty"><strong>Jacksonville won by one point</strong>Jacksonville Jaguars defeated Atlanta Falcons, 55–54. View the complete report in Player Stats.</div><div class="resultbanner"><div class="teamresult winner"><img src="https://a.espncdn.com/i/teamlogos/nfl/500/atl.png">Atlanta Falcons</div><div class="score">49 – 36</div><div class="teamresult"><img src="https://a.espncdn.com/i/teamlogos/nfl/500/gb.png">Green Bay Packers</div></div><div class="empty"><strong>Final</strong>Atlanta Falcons defeated Green Bay Packers. View the player statistics in Player Stats.</div>';
@@ -191,11 +192,11 @@ else if(page==="news")body='<div class="sectionhead"><strong>Latest Game Recap</
 else if(page==="leagues")body='<div class="article"><div><div class="leaguepill"><span class="leaguebadge">V</span> VFA Football</div><p style="margin-top:10px">League hub, teams, standings, schedule and statistics.</p></div><a class="bluebtn" href="#" data-page="teams">View teams →</a></div>';
 generic.innerHTML='<div class="card pagehead"><div class="eyebrow">ASN NETWORK</div><h2>'+title+'</h2><p>'+desc+'</p></div><div class="card">'+body+'</div>';
 home.classList.add("hidden");generic.classList.remove("hidden");if(page==="stats"){hydrateRobloxAvatars(generic);loadSeason6Leaderboard();}}
-function go(page){if(page==="home"){home.classList.remove("hidden");generic.classList.add("hidden")}else {pageMarkup(page);if(page==="legacy")loadLegacyArchive();if(page==="admin")renderAdminPanel();}document.querySelectorAll("[data-page]").forEach(el=>el.classList.toggle("active",el.dataset.page===page));window.scrollTo({top:0,behavior:"smooth"})}
+function go(page){if(page==="home"){home.classList.remove("hidden");generic.classList.add("hidden")}else {pageMarkup(page);if(page==="legacy")loadLegacyArchive();if(page==="admin")renderAdminPanel();if(page==="season6admin")renderSeason6AdminPanel();}document.querySelectorAll("[data-page]").forEach(el=>el.classList.toggle("active",el.dataset.page===page));window.scrollTo({top:0,behavior:"smooth"})}
 document.addEventListener("change",e=>{if(e.target&&e.target.id==="statsTeamSelect"){activeStatsTeam=e.target.value;pageMarkup("stats");}if(e.target&&e.target.id==="season6TeamSelect"){activeSeason6Team=e.target.value;renderSeason6Leaderboard();}});
 document.addEventListener("click",e=>{const statsToggle=e.target.closest("[data-stats-toggle]");if(statsToggle){const key=statsToggle.dataset.statsToggle,value=statsToggle.dataset.value;if(key==="view")activeStatsView=value;if(key==="season")activeStatsSeason=value;if(key==="mode")activeStatsMode=value;pageMarkup("stats");return;}const statsPosition=e.target.closest("[data-stats-position]");if(statsPosition){activeStatsCategory=statsPosition.dataset.statsPosition;pageMarkup("stats");return;}const s6Tab=e.target.closest("[data-s6-category]");if(s6Tab){activeSeason6Category=s6Tab.dataset.s6Category;renderSeason6Leaderboard();return;}const legacyTab=e.target.closest("[data-legacy-tab]");if(legacyTab){activeLegacyCategory=legacyTab.dataset.legacyTab;renderLegacyPlayers(window.asnLegacyPlayers||[]);document.querySelectorAll("[data-legacy-tab]").forEach(b=>b.classList.toggle("active",b===legacyTab));return;}const el=e.target.closest("[data-page]");if(el){e.preventDefault();go(el.dataset.page)}});
 // Private, unlisted admin entry point. Open the exact URL /#asn-private-manager.
-function checkPrivateAdminRoute(){if(window.location.hash==="#asn-private-manager")go("admin");}
+function checkPrivateAdminRoute(){if(window.location.hash==="#asn-private-manager")go("admin");else if(window.location.hash==="#asn-season6-manager")go("season6admin");}
 window.addEventListener("hashchange",checkPrivateAdminRoute);
 document.getElementById("search").addEventListener("keydown",e=>{if(e.key==="Enter"){go("teams");const q=e.target.value.toLowerCase();document.querySelectorAll(".teamtile").forEach(t=>t.classList.toggle("hidden",!t.textContent.toLowerCase().includes(q)))}});document.getElementById("year").textContent=new Date().getFullYear();
 async function hydrateRobloxAvatars(root){
@@ -419,5 +420,66 @@ async function publishSeason5File(){
 }
 
 // Run the initial private-route check only after all admin variables and functions are initialized.
+// Separate Season 6 private uploader. It only writes to Season 6 tables.
+let season6AdminCode=null;
+let pendingSeason6Json=null;
+function parseSeason6JsonText(raw){
+ let text=String(raw||"").replace(/^\\uFEFF/,"").trim(),scoreText="";
+ const split=text.indexOf("///");
+ if(split>=0){scoreText=text.slice(0,split).trim().replace(/\\s*[-–]\\s*/," - ");text=text.slice(split+3).trim();}
+ const parsed=JSON.parse(text);
+ if(!parsed||typeof parsed!=="object"||Array.isArray(parsed))throw new Error("The JSON root must be an object.");
+ if(scoreText&&!parsed.score_text&&!parsed.score)parsed.score_text=scoreText;
+ return parsed;
+}
+function renderSeason6AdminPanel(){
+ const root=document.getElementById("season6AdminRoot");if(!root)return;
+ const status=()=>document.getElementById("season6AdminStatus");
+ const show=(m)=>{const el=status();if(el)el.textContent=m;};
+ const draw=()=>{
+  root.innerHTML='<div class="auth-panel"><div class="admin-top"><div><div class="eyebrow">ACCESS VERIFIED</div><h3>Season 6 Import Center</h3><p>Paste a VFA JSON export or choose a JSON file. Supports native user-ID keyed VFA exports and { players: [], games: [] } JSON. Season 6 data stays separate from Season 5 Legacy.</p></div><button class="secondary" id="season6AdminLock">Lock manager</button></div><div class="import-drop"><strong>Import Season 6 statistics</strong><p>Optional score prefix supported, for example <code>25 - 23 /// { JSON }</code>.</p><input id="season6JsonFile" type="file" accept=".json,application/json"><textarea id="season6JsonText" rows="12" placeholder="Paste Season 6 JSON here…"></textarea><div class="auth-actions"><button id="season6JsonPreview" class="secondary">Preview JSON</button><button id="season6JsonPublish" class="import-action" disabled>Publish Season 6 data</button></div></div><div class="import-preview" id="season6JsonPreviewBox">Choose a JSON file or paste JSON, then preview before publishing.</div><div class="auth-status" id="season6AdminStatus" aria-live="polite"></div></div>';
+  document.getElementById("season6AdminLock").onclick=()=>{season6AdminCode=null;pendingSeason6Json=null;renderSeason6AdminPanel();};
+  document.getElementById("season6JsonFile").onchange=async e=>{const file=e.target.files?.[0];if(file)document.getElementById("season6JsonText").value=await file.text();pendingSeason6Json=null;document.getElementById("season6JsonPublish").disabled=true;document.getElementById("season6JsonPreviewBox").textContent="File loaded. Preview it before publishing.";};
+  document.getElementById("season6JsonPreview").onclick=()=>{
+   const box=document.getElementById("season6JsonPreviewBox"),btn=document.getElementById("season6JsonPublish");
+   try{
+    const parsed=parseSeason6JsonText(document.getElementById("season6JsonText").value);
+    const native=Object.values(parsed).some(v=>v&&typeof v==="object"&&v.other);
+    const players=Array.isArray(parsed.players)?parsed.players.length:(native?Object.values(parsed).filter(v=>v&&typeof v==="object"&&v.other).length:0);
+    const games=Array.isArray(parsed.games)?parsed.games.length:(parsed.score_text||parsed.score?1:0);
+    if(!players&&!games)throw new Error("No players or game result found. Check the JSON format.");
+    pendingSeason6Json=parsed;btn.disabled=false;
+    box.textContent="JSON preview successful.\\nPlayer records: "+players+"\\nGame results: "+games+"\\nSeason: 6\\nDestination: Season 6 leaderboards only.\\n\\nNo Season 5 Legacy records will be changed.";
+   }catch(e){pendingSeason6Json=null;btn.disabled=true;box.textContent="Preview failed: "+e.message;}
+  };
+  document.getElementById("season6JsonPublish").onclick=async()=>{
+   const btn=document.getElementById("season6JsonPublish");
+   if(!pendingSeason6Json||!season6AdminCode){show("Preview the JSON and unlock the manager first.");return;}
+   btn.disabled=true;show("Publishing Season 6 records…");
+   try{
+    const response=await fetch(ASN_SUPABASE_URL+"/functions/v1/asn-season6-admin",{method:"POST",headers:{"Content-Type":"application/json","apikey":ASN_SUPABASE_KEY,"x-asn-admin-code":season6AdminCode},body:JSON.stringify(pendingSeason6Json)});
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(result.error||("HTTP "+response.status));
+    show("Season 6 import complete: "+(result.players||0)+" player records and "+(result.games||0)+" game results published. Season 5 Legacy was not touched.");
+    document.getElementById("season6JsonPreviewBox").textContent="Published successfully.\\nPlayers: "+(result.players||0)+"\\nGames: "+(result.games||0)+"\\nYou can import another JSON file.";
+    pendingSeason6Json=null;
+   }catch(e){show("Season 6 import failed: "+e.message);btn.disabled=false;}
+  };
+ };
+ if(season6AdminCode){draw();return;}
+ root.innerHTML='<div class="auth-panel"><div class="eyebrow">PRIVATE ACCESS</div><h3>ASN Season 6 Manager</h3><p>Enter the private access code to open the Season 6 JSON uploader.</p><label for="season6AdminCode">Private access code</label><input id="season6AdminCode" type="password" autocomplete="off" placeholder="Enter private access code"><div class="auth-actions"><button id="season6AdminUnlock">Unlock Season 6 manager</button></div><div class="auth-status" id="season6AdminStatus" aria-live="polite"></div></div>';
+ document.getElementById("season6AdminUnlock").onclick=async()=>{
+  const button=document.getElementById("season6AdminUnlock"),code=document.getElementById("season6AdminCode").value;
+  if(!code){show("Enter your private access code.");return;}
+  button.disabled=true;show("Checking private access…");
+  try{
+   const response=await fetch(ASN_SUPABASE_URL+"/functions/v1/asn-season6-admin",{method:"POST",headers:{"Content-Type":"application/json","apikey":ASN_SUPABASE_KEY,"x-asn-admin-code":code},body:JSON.stringify({action:"verify"})});
+   const result=await response.json().catch(()=>({}));
+   if(!response.ok)throw new Error(result.error||"Access could not be verified.");
+   season6AdminCode=code;draw();
+  }catch(e){show(e.message);button.disabled=false;}
+ };
+}
+
 checkPrivateAdminRoute();
 </script></body></html>
