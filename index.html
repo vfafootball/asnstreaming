@@ -68,6 +68,90 @@
 .stats-note{padding:8px 16px 12px;color:#858c9b;font-size:9px}
 .s6-wrap{margin-top:14px}.s6-meta{display:flex;gap:10px;flex-wrap:wrap;padding:0 16px 12px;color:#8993a2;font-size:10px}.s6-meta strong{color:#f2f5fa}.s6-tabs{display:flex;gap:5px;flex-wrap:wrap;padding:8px 16px 12px;border-bottom:1px solid #222630}.s6-tabs button{background:#1a1e27;color:#aab3c2;padding:7px 11px;border-radius:20px;font-size:10px;font-weight:850}.s6-tabs button.active{background:#2d91df;color:#06111c}.s6-filter{margin:10px 16px;background:#191c23;color:#e5e9ef;border:1px solid #30343e;border-radius:20px;padding:8px 14px;font-size:10px}.s6-score{padding:10px 16px;color:#aab3c2;font-size:10px;border-bottom:1px solid #222630}.s6-score strong{color:#fff;font-size:14px;margin-right:8px}
 
+
+/* ASN visual refresh — layered network dashboard, preserving existing page logic */
+:root{--bg:#080a0f;--panel:#11151d;--panel2:#171d28;--line:#252d3a;--text:#f4f7fb;--muted:#929dad;--blue:#49a8f5;--blue2:#2078c6;--green:#35c995;--max:1440px}
+body{background:radial-gradient(ellipse at 50% -18%,#142338 0,transparent 42%),var(--bg);color:var(--text);font-size:13px}
+.topnav{height:68px;background:rgba(8,10,15,.94);backdrop-filter:blur(16px);border-bottom:1px solid #202938;box-shadow:0 8px 28px #0003}
+.navinner{gap:20px;padding:0 28px}
+.logo img{width:128px;height:46px}
+.navlinks{gap:4px;min-width:0}
+.navlinks button,.navlinks a{padding:10px 13px;border-radius:8px;color:#aeb9c8;transition:background .18s,color .18s,transform .18s}
+.navlinks .active,.navlinks button:hover{background:#1b2b3d;color:#fff}
+.navlinks button:hover{transform:translateY(-1px)}
+.search{background:#111823;border:1px solid #293548;border-radius:9px;padding:10px 13px;color:#eef5fc}
+.search:focus{outline:2px solid #398fd1;outline-offset:2px}
+.shell{padding:18px 28px 48px}
+.layout{grid-template-columns:218px minmax(0,1fr) 292px;gap:18px}
+.card,.leaderboard-card{background:linear-gradient(155deg,#131923,#0f131b 70%);border:1px solid #252e3c;border-radius:13px;box-shadow:0 10px 28px #0002}
+.sidecard{padding:16px;margin-bottom:14px}
+.sidehead{color:#8f9db0;letter-spacing:1.15px}
+.leaguepill,.teamtile{background:#192230;border:1px solid #263448;transition:border-color .18s,background .18s,transform .18s}
+.leaguepill:hover,.teamtile:hover{background:#1d2b3d;border-color:#3977a9;transform:translateY(-1px)}
+.sideaction{padding:9px 5px;color:#b5c0ce}
+.sideaction:hover{color:#72c4ff}
+.ticker{background:#111722;border-color:#273244;border-radius:12px;padding:9px;margin-bottom:16px}
+.final-game{background:#1a2230;border:1px solid #273449}
+.final-game:hover{border-color:#477ca8}
+.hero{min-height:292px;padding:30px;background:radial-gradient(ellipse at 80% 30%,#1b4665 0,#13283d 31%,#101722 72%);border:1px solid #2a3c50;border-radius:14px;box-shadow:0 18px 42px #0003}
+.hero:before{background:linear-gradient(90deg,#080d15 0%,#080d15e8 37%,#080d1540 100%),repeating-linear-gradient(135deg,transparent 0 34px,#ffffff08 35px 36px)}
+.heroart{border-color:#3d6c91;background:linear-gradient(145deg,#183a53,#0b121d 72%);box-shadow:0 20px 80px #0008}
+.eyebrow{color:#65bdff;letter-spacing:1.7px}
+.hero h1{font-size:clamp(34px,4.3vw,52px);letter-spacing:-2px}
+.hero p{font-size:13px;line-height:1.65;color:#c0cad7}
+.bluebtn{background:linear-gradient(135deg,#61bdff,#2887d2);color:#07121e;border-radius:8px;padding:11px 16px;box-shadow:0 6px 18px #2588d344;transition:filter .18s,transform .18s}
+.bluebtn:hover{filter:brightness(1.12);transform:translateY(-1px)}
+.section{margin-top:17px}
+.sectionhead{padding:15px 17px;border-bottom:1px solid #252e3b}
+.sectionhead strong{font-size:13px;letter-spacing:.1px}
+.sectionhead a{font-size:10px;color:#68bdff}
+.article{padding:17px}
+.article h3{font-size:16px;letter-spacing:-.25px}
+.article p{line-height:1.6;color:#aeb9c8}
+.twocol{gap:14px}
+.listrows,.rightlist{padding-left:16px;padding-right:16px}
+.rowitem,.rankrow{border-color:#252d39;padding:12px 0}
+.rowitem:hover,.rankrow:hover{background:#151d29}
+.empty{padding:32px 18px;color:#9ba7b7;line-height:1.6}
+.tabs,.leaderboard-tabs,.s6-tabs{background:#10151e;border-bottom-color:#273140}
+.tabs button,.s6-tabs button{border-radius:7px}
+.tabs button.active,.s6-tabs button.active{background:#318fd5;color:#06111b}
+.dataTable th,.leaderboard-table th,.stats-table th{background:#111722;color:#8c9bad}
+.dataTable td,.dataTable th,.leaderboard-table td,.leaderboard-table th,.stats-table td,.stats-table th{border-color:#242d3a}
+.dataTable tbody tr:hover,.leaderboard-table tbody tr:hover,.stats-table tbody tr:hover{background:#182230}
+.pagehead{padding:20px;margin-bottom:15px;background:linear-gradient(120deg,#172436,#111720);border:1px solid #2a394c;border-radius:12px}
+.pagehead h2{font-size:23px;letter-spacing:-.5px}
+.pagehead p{color:#a4b1c1;line-height:1.6}
+.archive-stat,.statbox{background:#151c27;border-color:#293548;border-radius:10px}
+.auth-panel{background:#141c28;border-color:#2c3b50;border-radius:13px}
+.auth-panel input,.auth-panel select{background:#0b111a;border-color:#34445a}
+.auth-actions button,.import-action{border-radius:8px}
+.foot{border-top-color:#242d39;color:#8c98a9;padding-top:28px}
+.footnav a:hover{color:#65bdff}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #64bdff;outline-offset:3px}
+@media(max-width:1120px){.layout{grid-template-columns:190px minmax(0,1fr);gap:15px}.rightcol{display:none}}
+@media(max-width:700px){
+ .topnav{height:auto}
+ .navinner{padding:10px 14px;gap:10px}
+ .logo img{width:112px;height:40px}
+ .navlinks{order:3;width:100%;gap:3px;padding:3px 0 2px;scrollbar-width:thin}
+ .navlinks button{padding:9px 11px;font-size:11px}
+ .search{width:min(42vw,180px);padding:9px 10px}
+ .shell{padding:10px 12px 30px}
+ .layout{display:block}
+ .hero{min-height:245px;padding:19px}
+ .hero h1{font-size:36px}
+ .heroart{opacity:.32;width:58%;right:-10%}
+ .twocol{grid-template-columns:1fr}
+ .sectionhead{padding:13px 14px}
+ .article{padding:14px}
+ .directory{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .foot{padding:20px 14px;display:block}
+ .footnav{margin-top:12px;flex-wrap:wrap}
+ .final-ticker{padding:8px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
 </style></head>
 <body>
 <header class="topnav"><div class="navinner"><a class="logo" href="#" aria-label="ASN home"><img src="/asn-logo.svg?v=2" alt="ASN+ logo"></a><nav class="navlinks" id="nav"><button class="active" data-page="home">Home</button><button data-page="live">Live</button><button data-page="replays">Replays</button><button data-page="news">News</button><button data-page="leagues">Leagues⌄</button><button data-page="standings">Standings</button><button data-page="teams">Teams</button><button data-page="legacy">Legacy</button></nav><input class="search" id="search" placeholder="⌕  Search ASN"></div></header>
