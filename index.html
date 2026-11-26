@@ -266,10 +266,10 @@ function openSeason6PlayerProfile(key,source="s6"){
   RB:{title:"RB",fields:[["ATT","att"],["YDS","yds"],["TD","td"],["LONG","long"],["YPA","ypa"]]},
   DEF:{title:"DEF",fields:[["TACKLES","tack"],["SACK","sack"],["FF","ffum"],["SAFETIES","safe"],["FUMBLE REC","rec"]]},
   DB:{title:"DB",fields:[["INT","int"],["TGTS","tgt"],["SWATS","defl"],["YDS ALLOWED","yds_allow"],["TD ALLOWED","td_allow"]]},
-  K:{title:"K",fields:[["GOOD","good"],["HARD GOOD","hard_good"],["ATT","att"],["HARD ATT","hard_att"],["PAT GOOD","pat_good"],["PAT ATT","pat_att"],["LONG","long"],["PAT AVG","pat_avg"]]},
+  K:{title:"K",fields:[["GOOD","good"],["HARD GOOD","hard_good"],["ATT","att"],["HARD ATT","hard_att"],["PAT GOOD","pat_good"],["PAT ATT","pat_att"],["LONG","long"],["PAT AVG","__omit_pat_avg"]]},
   WR:{title:"WR",fields:[["REC","catch"],["TGTS","tgt"],["YDS","yds"],["TD","td"],["LONG","long"]]}
  };
- const available=source==="s6"?["QB","RB","DEF","DB","K","WR"]:["QB","RB","WR","DEF","DB","K"];
+ const available=["QB","RB","DEF","DB","K"];
  let active="QB";
  const records=season6Games.map(g=>{
   const raw=(g.game_data&&g.game_data.raw)||{};
